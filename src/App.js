@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import WeatherComponent from "./WeatherComponent";
 
@@ -8,22 +8,32 @@ const App = () => {
   const [inputValue, setInputValue] = useState("");
   const [weatherData, setWeatherData] = useState([]);
   const [currentWeather, setCurrentWeather] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+
+  useEffect(() => {
+    if (currentLocation) {
+      getDetails(
+        currentLocation.name,
+        currentLocation.lat,
+        currentLocation.lon
+      );
+    }
+  }, [currentLocation]);
 
   const createContent = (weatherItem, index) => {
-    let cityName = inputValue;
     return (
       <li
         key={index}
-        className="weather-content col-md-3 me-5 mb-5 col-sm-4 bg-info "
+        className="weather-content col-md-3 me-5 mb-5 col-sm-4 bg-info"
       >
         <h2>
-          {cityName} ({weatherItem.dt_txt.split(" ")[0]})
+          {weatherItem.cityName} ({weatherItem.dt_txt.split(" ")[0]})
         </h2>
         <img
           src={`https://openweathermap.org/img/wn/${weatherItem.weather[0].icon}@2x.png`}
           alt="Weather Icon"
         />
-        <h4>Temperature: {weatherItem.main.temp}k</h4>
+        <h4>Temperature: {weatherItem.main.temp}K</h4>
         <h4>Wind: {weatherItem.wind.speed}m/s</h4>
         <h4>Humidity: {weatherItem.main.humidity}%</h4>
       </li>
@@ -80,7 +90,7 @@ const App = () => {
           return alert("An error occurred while finding the name");
 
         const { name, lat, lon } = data[0];
-        getDetails(name, lat, lon);
+        setCurrentLocation({ name, lat, lon, cityName });
       })
       .catch(() => {
         alert("Error occurred while fetching location");
@@ -97,7 +107,7 @@ const App = () => {
           .then((res) => res.json())
           .then((data) => {
             const { name, lat, lon } = data[0];
-            getDetails(name, lat, lon);
+            setCurrentLocation({ name, lat, lon, cityName: name }); // Assuming cityName from reverse geocoding
           })
           .catch(() => alert("Location not detected"));
       },
@@ -114,10 +124,10 @@ const App = () => {
           <h1 style={{ textAlign: "center" }}>WEATHER APP</h1>
           <div id="first">
             <h1 style={{ textAlign: "center" }}>
-              Enter Your Preffered Details
+              Enter Your Preferred Details
             </h1>
             <input
-              placeholder="eg:delhi,mumbai"
+              placeholder="eg: Delhi, Mumbai"
               className="elements-input"
               id="inputvalue"
               type="text"
@@ -140,17 +150,31 @@ const App = () => {
       </div>
       {weatherData.length !== 0 && (
         <ul id="forecast" className="row">
-          <li className=" weather-content col-md-7 mb-5 bg-info b">
+          <li className="weather-content col-md-7 mb-5 bg-info b">
             {currentWeather && (
               <WeatherComponent
                 weatherItem={currentWeather}
-                cityName={inputValue}
+                cityName={inputValue || currentLocation?.cityName}
               />
             )}
           </li>
-          {weatherData
-            .slice(1)
-            .map((weatherItem, index) => createContent(weatherItem, index))}
+          {weatherData.slice(1).map((weatherItem, index) => (
+            <li
+              key={index}
+              className="weather-content col-md-3 me-5 mb-5 col-sm-4 bg-info"
+            >
+              <h2>
+                {currentLocation?.cityName} ({weatherItem.dt_txt.split(" ")[0]})
+              </h2>
+              <img
+                src={`https://openweathermap.org/img/wn/${weatherItem.weather[0].icon}@2x.png`}
+                alt="Weather Icon"
+              />
+              <h4>Temperature: {weatherItem.main.temp}K</h4>
+              <h4>Wind: {weatherItem.wind.speed}m/s</h4>
+              <h4>Humidity: {weatherItem.main.humidity}%</h4>
+            </li>
+          ))}
         </ul>
       )}
     </div>
